@@ -8,7 +8,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 
     private static final String EXPECTED_AUDIENCE =
-            "api://9415422a-7394-44ca-a7fb-911e767844a8";
+            "api://d0261291-fbfe-40fb-b1b0-fae49a04f31f";
 
     @Override
     public OAuth2TokenValidatorResult validate(Jwt jwt) {
