@@ -1,7 +1,9 @@
+
 package com.pedidos360.ms_productos.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -23,21 +25,31 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .cors(cors -> {})
-            .csrf(csrf -> csrf.disable())
+                .cors(cors -> {})
+                .csrf(csrf -> csrf.disable())
 
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
-            )
 
-            // Todas las peticiones requieren autenticación (sin chequeo de roles)
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().authenticated()
-            )
+                .authorizeHttpRequests(auth -> auth
 
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+                        // Consultas publicas del catalogo
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/productos",
+                                "/api/productos/*"
+                        ).permitAll()
+
+                        // Otras operaciones requieren autenticacion
+                        .anyRequest().authenticated()
+                )
+
+                .oauth2ResourceServer(oauth2 ->
+                        oauth2.jwt(jwt -> {})
+                );
 
         return http.build();
     }
@@ -56,8 +68,8 @@ public class SecurityConfig {
 
         OAuth2TokenValidator<Jwt> validator =
                 new DelegatingOAuth2TokenValidator<>(
-                    issuerValidator,
-                    audienceValidator
+                        issuerValidator,
+                        audienceValidator
                 );
 
         decoder.setJwtValidator(validator);
