@@ -1,4 +1,3 @@
-
 package com.pedidos360.ms_productos.config;
 
 import org.springframework.context.annotation.Bean;
@@ -41,6 +40,12 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/productos",
                                 "/api/productos/*"
+                        ).permitAll()
+
+                        // Registro de vistas (Kafka): publico, con o sin sesion
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/productos/*/vista"
                         ).permitAll()
 
                         // Otras operaciones requieren autenticacion

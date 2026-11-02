@@ -16,6 +16,9 @@ public class Producto {
     private BigDecimal precio;
     private Integer stock;
 
+    // Calzado | Protecciones | Accesorios | Balones | Padel
+    private String categoria;
+
     public Producto() {
     }
 
@@ -64,5 +67,13 @@ public class Producto {
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
     }
 }

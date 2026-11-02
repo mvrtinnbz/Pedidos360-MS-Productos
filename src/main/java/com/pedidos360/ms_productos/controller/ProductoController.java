@@ -1,9 +1,13 @@
 package com.pedidos360.ms_productos.controller;
 
 import com.pedidos360.ms_productos.entity.Producto;
+import com.pedidos360.ms_productos.kafka.TiendaEvento;
+import com.pedidos360.ms_productos.kafka.TiendaEventoPublisher;
 import com.pedidos360.ms_productos.service.ProductoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,9 +17,11 @@ import java.util.List;
 public class ProductoController {
 
     private final ProductoService service;
+    private final TiendaEventoPublisher eventoPublisher;
 
-    public ProductoController(ProductoService service) {
+    public ProductoController(ProductoService service, TiendaEventoPublisher eventoPublisher) {
         this.service = service;
+        this.eventoPublisher = eventoPublisher;
     }
 
     @GetMapping
@@ -32,6 +38,22 @@ public class ProductoController {
         }
 
         return ResponseEntity.ok(producto);
+    }
+
+    // Registra que alguien vio el producto -> evento PRODUCTO_VISTO en Kafka.
+    // Publico: con token se registra el usuario; sin token queda como "anonimo".
+    @PostMapping("/{id}/vista")
+    public ResponseEntity<Void> registrarVista(@PathVariable Long id,
+                                               @AuthenticationPrincipal Jwt jwt) {
+        Producto producto = service.findById(id);
+
+        if (producto == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        eventoPublisher.publicar(TiendaEvento.productoVisto(producto, usuarioDesde(jwt)));
+
+        return ResponseEntity.accepted().build();
     }
 
     @PostMapping
@@ -56,6 +78,7 @@ public class ProductoController {
         producto.setDescripcion(detalles.getDescripcion());
         producto.setPrecio(detalles.getPrecio());
         producto.setStock(detalles.getStock());
+        producto.setCategoria(detalles.getCategoria());
 
         return ResponseEntity.ok(service.save(producto));
     }
@@ -72,5 +95,19 @@ public class ProductoController {
         service.deleteById(id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // Mismo usuarioId que usan los otros microservicios (UPN / correo del token)
+    private static String usuarioDesde(Jwt jwt) {
+        if (jwt == null) {
+            return "anonimo";
+        }
+        for (String claim : new String[]{"preferred_username", "upn", "unique_name", "email"}) {
+            String valor = jwt.getClaimAsString(claim);
+            if (valor != null && !valor.isBlank()) {
+                return valor;
+            }
+        }
+        return jwt.getSubject();
     }
 }
